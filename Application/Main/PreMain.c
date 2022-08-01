@@ -1,0 +1,63 @@
+#include <stdlib.h>
+
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
+int main(int argc, char* argv[]);
+
+#ifdef __cplusplus
+}
+#endif
+
+void rtems_stack_checker_report_usage(void);
+
+void* POSIX_Init(void* p)
+{
+
+  int argc = 1;
+  char *argv[] = { "dummy" };
+  int exit_status = main(argc,argv);
+  rtems_stack_checker_report_usage();
+  exit(exit_status);
+  return NULL;
+}
+
+#define CONFIGURE_APPLICATION_NEEDS_CONSOLE_DRIVER
+#define CONFIGURE_APPLICATION_NEEDS_CLOCK_DRIVER
+
+#define CONFIGURE_APPLICATION_NEEDS_LIBBLOCK
+
+
+#define CONFIGURE_USE_IMFS_AS_BASE_FILESYSTEM
+#define CONFIGURE_FILESYSTEM_IMFS
+#define CONFIGURE_FILESYSTEM_DOSFS
+#define CONFIGURE_BDBUF_BUFFER_MIN_SIZE 512
+#define CONFIGURE_BDBUF_BUFFER_MAX_SIZE 1024
+#define CONFIGURE_BDBUF_CACHE_MEMORY_SIZE (2 * CONFIGURE_BDBUF_BUFFER_MAX_SIZE)
+#define CONFIGURE_BDBUF_MAX_READ_AHEAD_BLOCKS 0
+
+#define CONFIGURE_MAXIMUM_FILE_DESCRIPTORS 32
+#define CONFIGURE_MAXIMUM_DRIVERS 8
+
+#define CONFIGURE_MAXIMUM_USER_EXTENSIONS 4
+#define CONFIGURE_MAXIMUM_POSIX_KEYS 32
+#define CONFIGURE_MAXIMUM_POSIX_QUEUED_SIGNALS 32
+// Do not use CONFIGURE_UNIFIED_WORK_AREAS and CONFIGURE_UNLIMITED_OBJECTS in production software
+#define CONFIGURE_UNLIMITED_OBJECTS
+#define CONFIGURE_UNIFIED_WORK_AREAS
+
+
+
+#define CONFIGURE_POSIX_INIT_THREAD_STACK_SIZE (8 * 1024)
+#define CONFIGURE_MINIMUM_TASK_STACK_SIZE (8 * 1024)
+#define MAX_TLS_SIZE RTEMS_ALIGN_UP( 4, RTEMS_TASK_STORAGE_ALIGNMENT)
+#define CONFIGURE_MAXIMUM_THREAD_LOCAL_STORAGE_SIZE MAX_TLS_SIZE
+#define CONFIGURE_STACK_CHECKER_ENABLED
+#define CONFIGURE_POSIX_INIT_THREAD_TABLE
+#define CONFIGURE_INIT
+
+#include <rtems.h>
+#include <rtems/confdefs.h>

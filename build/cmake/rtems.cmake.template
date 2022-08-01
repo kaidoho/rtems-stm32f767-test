@@ -1,0 +1,44 @@
+set(CMAKE_SYSTEM_NAME Generic)
+
+
+set(rtems_tc_dir     REPLACED_RTEMS_TC_DIR)
+set(rtems_arch       REPLACED_RTEMS_ARCH)
+set(rtems_lib_dir    REPLACED_RTEMS_LIB_DIR)
+set(rtems_abi_flags  "REPLACED_ABI_FLAGS")
+
+set(rtems_inc_dir   "${rtems_lib_dir}/include")
+
+
+set(CMAKE_C_COMPILER    ${rtems_tc_dir}/${rtems_arch}-rtems6-gcc CACHE INTERNAL "c compiler")
+set(CMAKE_CXX_COMPILER  ${rtems_tc_dir}/${rtems_arch}-rtems6-g++ CACHE INTERNAL "cxx compiler")
+set(CMAKE_AR            ${rtems_tc_dir}/${rtems_arch}-rtems6-ar CACHE INTERNAL "archiver")
+
+set(EXE_LINKER_FLAGS  "${rtems_abi_flags} -B ${rtems_lib_dir} -qrtems -Wl,--gc-sections,--print-memory-usage,-Map=output.map")
+set(EXE_LINKER_FLAGS_INIT "${EXE_LINKER_FLAGS} ${rtems_lib_dir}/PreMain.c.obj" )
+
+set(COMMON_DEBUG_FLAGS    "-Og -g3")
+set(COMMON_RELEASE_FLAGS  "-O2 -g")
+
+set(COMMON_C_FLAGS    "-fdata-sections -ffunction-sections -Wno-psabi")
+set(COMMON_CXX_FLAGS  "-fdata-sections -ffunction-sections -Wno-psabi -fno-exceptions")
+
+set(C_FLAGS_DEBUG     "${rtems_abi_flags} ${COMMON_C_FLAGS} ${COMMON_DEBUG_FLAGS} -isystem ${rtems_inc_dir}")
+set(C_FLAGS_RELEASE   "${rtems_abi_flags} ${COMMON_C_FLAGS} ${COMMON_RELEASE_FLAGS} -isystem ${rtems_inc_dir}")
+
+set(CXX_FLAGS_DEBUG   "${rtems_abi_flags} ${COMMON_CXX_FLAGS} ${COMMON_DEBUG_FLAGS} -isystem ${rtems_inc_dir}")
+set(CXX_FLAGS_RELEASE "${rtems_abi_flags} ${COMMON_CXX_FLAGS} ${COMMON_RELEASE_FLAGS} -isystem ${rtems_inc_dir}")
+
+
+
+
+set(CMAKE_C_FLAGS_DEBUG "${C_FLAGS_DEBUG}" CACHE INTERNAL "c compiler flags")
+set(CMAKE_C_FLAGS_RELEASE "${C_FLAGS_RELEASE}" CACHE INTERNAL "c compiler flags")
+
+set(CMAKE_CXX_FLAGS_DEBUG "${CXX_FLAGS_DEBUG}" CACHE INTERNAL "cxx compiler flags")
+set(CMAKE_CXX_FLAGS_RELEASE "${CXX_FLAGS_RELEASE}" CACHE INTERNAL "cxx compiler flags")
+
+set(CMAKE_C_FLAGS_INIT "${C_FLAGS_DEBUG}" CACHE INTERNAL "c compiler flags init")
+set(CMAKE_CXX_FLAGS_INIT "${CXX_FLAGS_DEBUG}" CACHE INTERNAL "cxx compiler flags init")
+
+
+set(CMAKE_EXE_LINKER_FLAGS_INIT "${EXE_LINKER_FLAGS_INIT}" CACHE INTERNAL "exe link flags init")

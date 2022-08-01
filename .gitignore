@@ -1,2 +1,5 @@
-build
-rtems-src
+build/downloads
+build/tools
+build/work
+build/cmake/rtems.cmake
+RTEMS

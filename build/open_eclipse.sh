@@ -7,6 +7,10 @@ CWD=$(dirname "${THIS_SCRIPT}")
 BUILD_TOP_DIR=${CWD}/build
 RTEMS_TOP_SRC_DIR=${CWD}/rtems-src
 
+CMAKE_SCRIPT_DIR=${BUILD_TOP_DIR}/cmake_scripts
+WORK_DIR=${BUILD_TOP_DIR}/work
+
+
 RTEMS_RSB_GIT_REPO=git://git.rtems.org/rtems-source-builder.git
 RTEMS_RSB_SRC_DIR=${RTEMS_TOP_SRC_DIR}/rsb
 RTEMS_RSB_VER_COMMIT=22e32ecc272353a9047d429358aee2d61687ccc7
@@ -16,7 +20,7 @@ RTEMS_TOOLCHAIN_INSTALL_DIR=${BUILD_TOP_DIR}/rtems_toolchain
 RTEMS_OS_GIT_REPO=https://github.com/kaidoho/rtems.git
 RTEMS_OS_SRC_DIR=${RTEMS_TOP_SRC_DIR}/rtems
 RTEMS_OS_VER_COMMIT=nucleo_stm32f767zi
-RTEMS_OS_INSTALL_DIR=${CWD}/rtems_os
+RTEMS_OS_INSTALL_DIR=${WORK_DIR}/rtems_os
 
 RTEMS_BSP_ARCH=arm
 RTEMS_BSP_NAME=nucleo-f767zi
@@ -29,7 +33,7 @@ ECLIPSE_EMBEDDED_SRC_REPO=http://ftp.halifax.rwth-aachen.de/eclipse/embed-cdt/re
 ECLIPSE_EMBEDDED_TAR_NAME=org.eclipse.embedcdt.repository-6.2.2-202206121057.zip
 TOOL_DOWNLOAD_DIR=${BUILD_TOP_DIR}/downloads
 
-
+APP_DIR=${CWD}/application
 
 echo "Location of this script: ${CWD}"
 echo "RSB Source: ${RTEMS_RSB_SRC_DIR}"
@@ -78,12 +82,25 @@ fi
 
 echo "Build RTEMS with POSIX support"
 
-#pushd ${RTEMS_OS_SRC_DIR}
-#./waf bsp_defaults --rtems-bsps=${RTEMS_BSP_ARCH}/${RTEMS_BSP_NAME} > config.ini
-#sed -i 's/RTEMS_POSIX_API = False/RTEMS_POSIX_API = True/g' config.ini
-#./waf configure --prefix=${RTEMS_OS_INSTALL_DIR} --rtems-tools=${RTEMS_TOOLCHAIN_INSTALL_DIR} --rtems-bsps=${RTEMS_BSP_ARCH}/${RTEMS_BSP_NAME}
-#./waf install
-#popd
+pushd ${RTEMS_OS_SRC_DIR}
+./waf bsp_defaults --rtems-bsps=${RTEMS_BSP_ARCH}/${RTEMS_BSP_NAME} > config.ini
+sed -i 's/RTEMS_POSIX_API = False/RTEMS_POSIX_API = True/g' config.ini
+./waf configure --prefix=${RTEMS_OS_INSTALL_DIR} --rtems-tools=${RTEMS_TOOLCHAIN_INSTALL_DIR} --rtems-bsps=${RTEMS_BSP_ARCH}/${RTEMS_BSP_NAME}
+./waf install
+
+# Write a toolchain file
+cp ${CMAKE_SCRIPT_DIR}/rtems.cmake.template  ${CMAKE_SCRIPT_DIR}/rtems.cmake
+ABI_FLAGS=$(sed -n "/ABI_FLAGS=/p" ${RTEMS_OS_INSTALL_DIR}/lib/pkgconfig/${RTEMS_BSP_ARCH}-rtems6-${RTEMS_BSP_NAME}.pc)
+ABI_FLAGS=${ABI_FLAGS/ABI_FLAGS=/""} 
+
+sed -i "s:REPLACED_RTEMS_TC_DIR:${RTEMS_TOOLCHAIN_INSTALL_DIR}/bin:g" ${CMAKE_SCRIPT_DIR}/rtems.cmake
+sed -i "s:REPLACED_RTEMS_ARCH:${RTEMS_BSP_ARCH}:g" ${CMAKE_SCRIPT_DIR}/rtems.cmake
+sed -i "s:REPLACED_RTEMS_LIB_DIR:${RTEMS_OS_INSTALL_DIR}/${RTEMS_BSP_ARCH}-rtems6/${RTEMS_BSP_NAME}/lib:g" ${CMAKE_SCRIPT_DIR}/rtems.cmake
+sed -i "s:REPLACED_ABI_FLAGS:${ABI_FLAGS}:g" ${CMAKE_SCRIPT_DIR}/rtems.cmake
+
+# Compile PreMain.c so that the compiler checks work
+${RTEMS_TOOLCHAIN_INSTALL_DIR}/bin/${RTEMS_BSP_ARCH}-rtems6-gcc ${ABI_FLAGS} -isystem ${RTEMS_OS_INSTALL_DIR}/${RTEMS_BSP_ARCH}-rtems6/${RTEMS_BSP_NAME}/lib/include -o ${RTEMS_OS_INSTALL_DIR}/${RTEMS_BSP_ARCH}-rtems6/${RTEMS_BSP_NAME}/lib/PreMain.c.obj -c ${APP_DIR}/Main/PreMain.c
+popd
 
 
 if [ ! -d "${ECLIPSE_INSTALL_DIR}" ]; then
@@ -107,3 +124,17 @@ if [ ! -d "${ECLIPSE_INSTALL_DIR}" ]; then
   popd
 
 fi
+
+
+if [ ! -d "${WORK_DIR}/cmake" ]; then
+  mkdir -p ${WORK_DIR}/cmake
+fi
+
+
+
+
+
+
+pushd ${WORK_DIR}/cmake
+  cmake -G"Eclipse CDT4 - Unix Makefiles" -DCMAKE_TOOLCHAIN_FILE=${CMAKE_SCRIPT_DIR}/rtems.cmake ${APP_DIR}
+popd
